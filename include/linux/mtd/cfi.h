@@ -138,7 +138,7 @@ struct cfi_ident {
 	uint16_t InterfaceDesc;
 	uint16_t MaxBufWriteSize;
 	uint8_t  NumEraseRegions;
-	uint32_t EraseRegionInfo[0]; /* Not host ordered */
+	uint32_t EraseRegionInfo[]; /* Not host ordered */
 } __packed;
 
 /* Extended Query Structure for both PRI and ALT */
@@ -165,7 +165,7 @@ struct cfi_pri_intelext {
 	uint16_t ProtRegAddr;
 	uint8_t  FactProtRegSize;
 	uint8_t  UserProtRegSize;
-	uint8_t  extra[0];
+	uint8_t  extra[];
 } __packed;
 
 struct cfi_intelext_otpinfo {
@@ -219,6 +219,13 @@ struct cfi_pri_amdstd {
 	uint8_t  VppMin;
 	uint8_t  VppMax;
 	uint8_t  TopBottom;
+	/* Below field are added from version 1.5 */
+	uint8_t  ProgramSuspend;
+	uint8_t  UnlockBypass;
+	uint8_t  SecureSiliconSector;
+	uint8_t  SoftwareFeatures;
+#define CFI_POLL_STATUS_REG	BIT(0)
+#define CFI_POLL_DQ		BIT(1)
 } __packed;
 
 /* Vendor-Specific PRI for Atmel chips (command set 0x0002) */
@@ -279,7 +286,8 @@ struct cfi_private {
 	map_word sector_erase_cmd;
 	unsigned long chipshift; /* Because they're of the same type */
 	const char *im_name;	 /* inter_module name for cmdset_setup */
-	struct flchip chips[0];  /* per-chip data structure for each chip */
+	unsigned long quirks;
+	struct flchip chips[] __counted_by(numchips);  /* per-chip data structure for each chip */
 };
 
 uint32_t cfi_build_cmd_addr(uint32_t cmd_ofs,
@@ -300,32 +308,32 @@ static inline uint8_t cfi_read_query(struct map_info *map, uint32_t addr)
 {
 	map_word val = map_read(map, addr);
 
-	if (map_bankwidth_is_1(map)) {
+	if (map_bankwidth_is_1(map))
 		return val.x[0];
-	} else if (map_bankwidth_is_2(map)) {
+	if (map_bankwidth_is_2(map))
 		return cfi16_to_cpu(map, val.x[0]);
-	} else {
-		/* No point in a 64-bit byteswap since that would just be
-		   swapping the responses from different chips, and we are
-		   only interested in one chip (a representative sample) */
-		return cfi32_to_cpu(map, val.x[0]);
-	}
+	/*
+	 * No point in a 64-bit byteswap since that would just be
+	 * swapping the responses from different chips, and we are
+	 * only interested in one chip (a representative sample)
+	 */
+	return cfi32_to_cpu(map, val.x[0]);
 }
 
 static inline uint16_t cfi_read_query16(struct map_info *map, uint32_t addr)
 {
 	map_word val = map_read(map, addr);
 
-	if (map_bankwidth_is_1(map)) {
+	if (map_bankwidth_is_1(map))
 		return val.x[0] & 0xff;
-	} else if (map_bankwidth_is_2(map)) {
+	if (map_bankwidth_is_2(map))
 		return cfi16_to_cpu(map, val.x[0]);
-	} else {
-		/* No point in a 64-bit byteswap since that would just be
-		   swapping the responses from different chips, and we are
-		   only interested in one chip (a representative sample) */
-		return cfi32_to_cpu(map, val.x[0]);
-	}
+	/*
+	 * No point in a 64-bit byteswap since that would just be
+	 * swapping the responses from different chips, and we are
+	 * only interested in one chip (a representative sample)
+	 */
+	return cfi32_to_cpu(map, val.x[0]);
 }
 
 void cfi_udelay(int us);

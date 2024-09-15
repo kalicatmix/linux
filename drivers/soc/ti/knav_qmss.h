@@ -67,7 +67,7 @@ struct knav_reg_config {
 	u32		link_ram_size0;
 	u32		link_ram_base1;
 	u32		__pad2[2];
-	u32		starvation[0];
+	u32		starvation[];
 };
 
 struct knav_reg_region {
@@ -333,7 +333,7 @@ struct knav_range_info {
 	void				*queue_base_inst;
 	unsigned			flags;
 	struct list_head		list;
-	struct knav_range_ops		*ops;
+	const struct knav_range_ops	*ops;
 	struct knav_acc_info		acc_info;
 	struct knav_acc_channel	*acc;
 	unsigned			num_irqs;

@@ -100,7 +100,7 @@ struct rio_switch {
 	u32 port_ok;
 	struct rio_switch_ops *ops;
 	spinlock_t lock;
-	struct rio_dev *nextdev[0];
+	struct rio_dev *nextdev[];
 };
 
 /**
@@ -201,7 +201,7 @@ struct rio_dev {
 	u8 hopcount;
 	struct rio_dev *prev;
 	atomic_t state;
-	struct rio_switch rswitch[0];	/* RIO switch info */
+	struct rio_switch rswitch[];	/* RIO switch info */
 };
 
 #define rio_dev_g(n) list_entry(n, struct rio_dev, global_list)
@@ -465,7 +465,7 @@ struct rio_driver {
 	struct device_driver driver;
 };
 
-#define	to_rio_driver(drv) container_of(drv,struct rio_driver, driver)
+#define	to_rio_driver(drv) container_of_const(drv,struct rio_driver, driver)
 
 union rio_pw_msg {
 	struct {

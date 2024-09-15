@@ -282,8 +282,6 @@ static int vidioc_querycap(struct file *file, void  *priv,
 	strscpy(v->card, dev->name, sizeof(v->card));
 	snprintf(v->bus_info, sizeof(v->bus_info),
 		 "I2C:%s", dev_name(&dev->dev));
-	v->device_caps = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
-	v->capabilities = v->device_caps | V4L2_CAP_DEVICE_CAPS;
 	return 0;
 }
 
@@ -413,8 +411,7 @@ static const struct video_device tea5764_radio_template = {
 };
 
 /* I2C probe: check if the device exists and register with v4l if it is */
-static int tea5764_i2c_probe(struct i2c_client *client,
-			     const struct i2c_device_id *id)
+static int tea5764_i2c_probe(struct i2c_client *client)
 {
 	struct tea5764_device *radio;
 	struct v4l2_device *v4l2_dev;
@@ -465,6 +462,7 @@ static int tea5764_i2c_probe(struct i2c_client *client,
 	video_set_drvdata(&radio->vdev, radio);
 	radio->vdev.lock = &radio->mutex;
 	radio->vdev.v4l2_dev = v4l2_dev;
+	radio->vdev.device_caps = V4L2_CAP_TUNER | V4L2_CAP_RADIO;
 
 	/* initialize and power off the chip */
 	tea5764_i2c_read(radio);
@@ -488,7 +486,7 @@ errfr:
 	return ret;
 }
 
-static int tea5764_i2c_remove(struct i2c_client *client)
+static void tea5764_i2c_remove(struct i2c_client *client)
 {
 	struct tea5764_device *radio = i2c_get_clientdata(client);
 
@@ -500,7 +498,6 @@ static int tea5764_i2c_remove(struct i2c_client *client)
 		v4l2_device_unregister(&radio->v4l2_dev);
 		kfree(radio);
 	}
-	return 0;
 }
 
 /* I2C subsystem interface */

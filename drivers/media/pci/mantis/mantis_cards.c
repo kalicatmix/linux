@@ -69,10 +69,8 @@ static irqreturn_t mantis_irq_handler(int irq, void *dev_id)
 	struct mantis_ca *ca;
 
 	mantis = (struct mantis_pci *) dev_id;
-	if (unlikely(mantis == NULL)) {
-		dprintk(MANTIS_ERROR, 1, "Mantis == NULL");
+	if (unlikely(!mantis))
 		return IRQ_NONE;
-	}
 	ca = mantis->mantis_ca;
 
 	stat = mmread(MANTIS_INT_STAT);
@@ -127,7 +125,7 @@ static irqreturn_t mantis_irq_handler(int irq, void *dev_id)
 	if (stat & MANTIS_INT_RISCI) {
 		dprintk(MANTIS_DEBUG, 0, "<%s>", label[8]);
 		mantis->busy_block = (stat & MANTIS_INT_RISCSTAT) >> 28;
-		tasklet_schedule(&mantis->tasklet);
+		queue_work(system_bh_wq, &mantis->bh_work);
 	}
 	if (stat & MANTIS_INT_I2CDONE) {
 		dprintk(MANTIS_DEBUG, 0, "<%s>", label[9]);

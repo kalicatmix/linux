@@ -132,7 +132,12 @@ static int rt2800soc_write_firmware(struct rt2x00_dev *rt2x00dev,
 }
 
 static const struct ieee80211_ops rt2800soc_mac80211_ops = {
+	.add_chanctx = ieee80211_emulate_add_chanctx,
+	.remove_chanctx = ieee80211_emulate_remove_chanctx,
+	.change_chanctx = ieee80211_emulate_change_chanctx,
+	.switch_vif_chanctx = ieee80211_emulate_switch_vif_chanctx,
 	.tx			= rt2x00mac_tx,
+	.wake_tx_queue		= ieee80211_handle_wake_tx_queue,
 	.start			= rt2x00mac_start,
 	.stop			= rt2x00mac_stop,
 	.add_interface		= rt2x00mac_add_interface,
@@ -156,6 +161,7 @@ static const struct ieee80211_ops rt2800soc_mac80211_ops = {
 	.get_survey		= rt2800_get_survey,
 	.get_ringparam		= rt2x00mac_get_ringparam,
 	.tx_frames_pending	= rt2x00mac_tx_frames_pending,
+	.reconfig_complete	= rt2x00mac_reconfig_complete,
 };
 
 static const struct rt2800_ops rt2800soc_rt2800_ops = {
@@ -171,6 +177,7 @@ static const struct rt2800_ops rt2800soc_rt2800_ops = {
 	.drv_write_firmware	= rt2800soc_write_firmware,
 	.drv_init_registers	= rt2800mmio_init_registers,
 	.drv_get_txwi		= rt2800mmio_get_txwi,
+	.drv_get_dma_done	= rt2800mmio_get_dma_done,
 };
 
 static const struct rt2x00lib_ops rt2800soc_rt2x00_ops = {
@@ -195,6 +202,7 @@ static const struct rt2x00lib_ops rt2800soc_rt2x00_ops = {
 	.link_tuner		= rt2800_link_tuner,
 	.gain_calibration	= rt2800_gain_calibration,
 	.vco_calibration	= rt2800_vco_calibration,
+	.watchdog		= rt2800_watchdog,
 	.start_queue		= rt2800mmio_start_queue,
 	.kick_queue		= rt2800mmio_kick_queue,
 	.stop_queue		= rt2800mmio_stop_queue,
@@ -211,6 +219,7 @@ static const struct rt2x00lib_ops rt2800soc_rt2x00_ops = {
 	.config_erp		= rt2800_config_erp,
 	.config_ant		= rt2800_config_ant,
 	.config			= rt2800_config,
+	.pre_reset_hw		= rt2800_pre_reset_hw,
 };
 
 static const struct rt2x00_ops rt2800soc_ops = {

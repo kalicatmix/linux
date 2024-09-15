@@ -1,10 +1,10 @@
-/* SPDX-License-Identifier: GPL-2.0-only */
+/* SPDX-License-Identifier: GPL-2.0-only OR MIT */
 /*
  * Device Tree constants for the Texas Instruments DP83867 PHY
  *
  * Author: Dan Murphy <dmurphy@ti.com>
  *
- * Copyright:   (C) 2015 Texas Instruments, Inc.
+ * Copyright (C) 2015-2024 Texas Instruments Incorporated - https://www.ti.com/
  */
 
 #ifndef _DT_BINDINGS_TI_DP83867_H
@@ -48,4 +48,6 @@
 #define DP83867_CLK_O_SEL_CHN_C_TCLK		0xA
 #define DP83867_CLK_O_SEL_CHN_D_TCLK		0xB
 #define DP83867_CLK_O_SEL_REF_CLK		0xC
+/* Special flag to indicate clock should be off */
+#define DP83867_CLK_O_SEL_OFF			0xFFFFFFFF
 #endif

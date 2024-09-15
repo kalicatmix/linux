@@ -211,10 +211,8 @@ static int ni903x_acpi_add(struct acpi_device *device)
 	watchdog_init_timeout(wdd, timeout, dev);
 
 	ret = watchdog_register_device(wdd);
-	if (ret) {
-		dev_err(dev, "failed to register watchdog\n");
+	if (ret)
 		return ret;
-	}
 
 	/* Switch from boot mode to user mode */
 	outb(NIWD_CONTROL_RESET | NIWD_CONTROL_MODE,
@@ -226,14 +224,12 @@ static int ni903x_acpi_add(struct acpi_device *device)
 	return 0;
 }
 
-static int ni903x_acpi_remove(struct acpi_device *device)
+static void ni903x_acpi_remove(struct acpi_device *device)
 {
 	struct ni903x_wdt *wdt = acpi_driver_data(device);
 
 	ni903x_wdd_stop(&wdt->wdd);
 	watchdog_unregister_device(&wdt->wdd);
-
-	return 0;
 }
 
 static const struct acpi_device_id ni903x_device_ids[] = {

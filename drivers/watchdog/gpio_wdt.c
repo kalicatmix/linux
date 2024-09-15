@@ -5,13 +5,20 @@
  * Author: 2013, Alexander Shiyan <shc_work@mail.ru>
  */
 
-#include <linux/err.h>
 #include <linux/delay.h>
-#include <linux/module.h>
+#include <linux/err.h>
 #include <linux/gpio/consumer.h>
-#include <linux/of.h>
+#include <linux/mod_devicetable.h>
+#include <linux/module.h>
 #include <linux/platform_device.h>
+#include <linux/property.h>
 #include <linux/watchdog.h>
+
+static bool nowayout = WATCHDOG_NOWAYOUT;
+module_param(nowayout, bool, 0);
+MODULE_PARM_DESC(nowayout,
+		"Watchdog cannot be stopped once started (default="
+				__MODULE_STRING(WATCHDOG_NOWAYOUT) ")");
 
 #define SOFT_TIMEOUT_MIN	1
 #define SOFT_TIMEOUT_DEF	60
@@ -100,7 +107,6 @@ static const struct watchdog_ops gpio_wdt_ops = {
 static int gpio_wdt_probe(struct platform_device *pdev)
 {
 	struct device *dev = &pdev->dev;
-	struct device_node *np = dev->of_node;
 	struct gpio_wdt_priv *priv;
 	enum gpiod_flags gflags;
 	unsigned int hw_margin;
@@ -113,7 +119,7 @@ static int gpio_wdt_probe(struct platform_device *pdev)
 
 	platform_set_drvdata(pdev, priv);
 
-	ret = of_property_read_string(np, "hw_algo", &algo);
+	ret = device_property_read_string(dev, "hw_algo", &algo);
 	if (ret)
 		return ret;
 	if (!strcmp(algo, "toggle")) {
@@ -130,16 +136,14 @@ static int gpio_wdt_probe(struct platform_device *pdev)
 	if (IS_ERR(priv->gpiod))
 		return PTR_ERR(priv->gpiod);
 
-	ret = of_property_read_u32(np,
-				   "hw_margin_ms", &hw_margin);
+	ret = device_property_read_u32(dev, "hw_margin_ms", &hw_margin);
 	if (ret)
 		return ret;
 	/* Disallow values lower than 2 and higher than 65535 ms */
 	if (hw_margin < 2 || hw_margin > 65535)
 		return -EINVAL;
 
-	priv->always_running = of_property_read_bool(np,
-						     "always-running");
+	priv->always_running = device_property_read_bool(dev, "always-running");
 
 	watchdog_set_drvdata(&priv->wdd, priv);
 
@@ -151,6 +155,7 @@ static int gpio_wdt_probe(struct platform_device *pdev)
 	priv->wdd.timeout	= SOFT_TIMEOUT_DEF;
 
 	watchdog_init_timeout(&priv->wdd, 0, dev);
+	watchdog_set_nowayout(&priv->wdd, nowayout);
 
 	watchdog_stop_on_reboot(&priv->wdd);
 

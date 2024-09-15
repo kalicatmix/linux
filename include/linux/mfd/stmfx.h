@@ -5,7 +5,7 @@
  */
 
 #ifndef MFD_STMFX_H
-#define MFX_STMFX_H
+#define MFD_STMFX_H
 
 #include <linux/regmap.h>
 
@@ -109,13 +109,12 @@ struct stmfx {
 	struct device *dev;
 	struct regmap *map;
 	struct regulator *vdd;
+	int irq;
 	struct irq_domain *irq_domain;
 	struct mutex lock; /* IRQ bus lock */
 	u8 irq_src;
-#ifdef CONFIG_PM
 	u8 bkp_sysctrl;
 	u8 bkp_irqoutpin;
-#endif
 };
 
 int stmfx_function_enable(struct stmfx *stmfx, u32 func);

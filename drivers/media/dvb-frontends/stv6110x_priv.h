@@ -20,13 +20,13 @@
 #define dprintk(__y, __z, format, arg...) do {						\
 	if (__z) {									\
 		if	((verbose > FE_ERROR) && (verbose > __y))			\
-			printk(KERN_ERR "%s: " format "\n", __func__ , ##arg);		\
+			printk(KERN_ERR "%s: " format "\n", __func__, ##arg);		\
 		else if	((verbose > FE_NOTICE) && (verbose > __y))			\
-			printk(KERN_NOTICE "%s: " format "\n", __func__ , ##arg);	\
+			printk(KERN_NOTICE "%s: " format "\n", __func__, ##arg);	\
 		else if ((verbose > FE_INFO) && (verbose > __y))			\
-			printk(KERN_INFO "%s: " format "\n", __func__ , ##arg);		\
+			printk(KERN_INFO "%s: " format "\n", __func__, ##arg);		\
 		else if ((verbose > FE_DEBUG) && (verbose > __y))			\
-			printk(KERN_DEBUG "%s: " format "\n", __func__ , ##arg);	\
+			printk(KERN_DEBUG "%s: " format "\n", __func__, ##arg);	\
 	} else {									\
 		if (verbose > __y)							\
 			printk(format, ##arg);						\
@@ -54,11 +54,12 @@
 #define REFCLOCK_MHz				(stv6110x->config->refclk / 1000000)
 
 struct stv6110x_state {
+	struct dvb_frontend		*frontend;
 	struct i2c_adapter		*i2c;
 	const struct stv6110x_config	*config;
 	u8				regs[8];
 
-	const struct stv6110x_devctl	*devctl;
+	struct stv6110x_devctl	*devctl;
 };
 
 #endif /* __STV6110x_PRIV_H */

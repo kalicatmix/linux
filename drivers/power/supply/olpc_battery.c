@@ -1,11 +1,8 @@
+// SPDX-License-Identifier: GPL-2.0-only
 /*
  * Battery driver for One Laptop Per Child board.
  *
  *	Copyright © 2006-2010  David Woodhouse <dwmw2@infradead.org>
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
  */
 
 #include <linux/kernel.h>
@@ -20,7 +17,6 @@
 #include <linux/jiffies.h>
 #include <linux/sched.h>
 #include <linux/olpc-ec.h>
-#include <asm/olpc.h>
 
 
 #define EC_BAT_VOLTAGE	0x10	/* uint16_t,	*9.76/32,    mV   */
@@ -92,7 +88,7 @@ static enum power_supply_property olpc_ac_props[] = {
 };
 
 static const struct power_supply_desc olpc_ac_desc = {
-	.name = "olpc-ac",
+	.name = "olpc_ac",
 	.type = POWER_SUPPLY_TYPE_MAINS,
 	.properties = olpc_ac_props,
 	.num_properties = ARRAY_SIZE(olpc_ac_props),
@@ -572,7 +568,7 @@ static ssize_t olpc_bat_error_read(struct device *dev,
 	if (ret < 0)
 		return ret;
 
-	return sprintf(buf, "%d\n", ec_byte);
+	return sysfs_emit(buf, "%d\n", ec_byte);
 }
 
 static struct device_attribute olpc_bat_error = {
@@ -609,7 +605,7 @@ static const struct attribute_group *olpc_bat_sysfs_groups[] = {
  *********************************************************************/
 
 static struct power_supply_desc olpc_bat_desc = {
-	.name = "olpc-battery",
+	.name = "olpc_battery",
 	.get_property = olpc_bat_get_property,
 	.use_for_apm = 1,
 };
@@ -639,6 +635,7 @@ static int olpc_battery_probe(struct platform_device *pdev)
 	struct power_supply_config bat_psy_cfg = {};
 	struct power_supply_config ac_psy_cfg = {};
 	struct olpc_battery_data *data;
+	struct device_node *np;
 	uint8_t status;
 	uint8_t ecver;
 	int ret;
@@ -653,7 +650,9 @@ static int olpc_battery_probe(struct platform_device *pdev)
 	if (ret)
 		return ret;
 
-	if (of_find_compatible_node(NULL, NULL, "olpc,xo1.75-ec")) {
+	np = of_find_compatible_node(NULL, NULL, "olpc,xo1.75-ec");
+	if (np) {
+		of_node_put(np);
 		/* XO 1.75 */
 		data->new_proto = true;
 		data->little_endian = true;

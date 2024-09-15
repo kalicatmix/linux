@@ -24,7 +24,7 @@
 #include <asm/ucontext.h>
 #include <asm/fpu.h>
 #include <asm/cpu-features.h>
-#include <asm/war.h>
+#include <asm/syscalls.h>
 
 #include "signal-common.h"
 
@@ -32,9 +32,6 @@
  * Including <asm/unistd.h> would give use the 64-bit syscall numbers ...
  */
 #define __NR_N32_restart_syscall	6214
-
-extern int setup_sigcontext(struct pt_regs *, struct sigcontext __user *);
-extern int restore_sigcontext(struct pt_regs *, struct sigcontext __user *);
 
 struct ucontextn32 {
 	u32		    uc_flags;
@@ -71,7 +68,7 @@ asmlinkage void sysn32_rt_sigreturn(void)
 	if (sig < 0)
 		goto badframe;
 	else if (sig)
-		force_sig(sig, current);
+		force_sig(sig);
 
 	if (compat_restore_altstack(&frame->rs_uc.uc_stack))
 		goto badframe;
@@ -87,7 +84,7 @@ asmlinkage void sysn32_rt_sigreturn(void)
 	/* Unreached */
 
 badframe:
-	force_sig(SIGSEGV, current);
+	force_sig(SIGSEGV);
 }
 
 static int setup_rt_frame_n32(void *sig_return, struct ksignal *ksig,

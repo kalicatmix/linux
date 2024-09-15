@@ -1,7 +1,5 @@
 // SPDX-License-Identifier: GPL-2.0-or-later
-/* -*- mode: c; c-basic-offset: 8; -*-
- * vim: noexpandtab sw=8 ts=8 sts=0:
- *
+/*
  * dcache.c
  *
  * dentry cache handling code
@@ -126,17 +124,10 @@ static int ocfs2_match_dentry(struct dentry *dentry,
 	if (!dentry->d_fsdata)
 		return 0;
 
-	if (!dentry->d_parent)
-		return 0;
-
 	if (skip_unhashed && d_unhashed(dentry))
 		return 0;
 
 	parent = d_inode(dentry->d_parent);
-	/* Negative parent dentry? */
-	if (!parent)
-		return 0;
-
 	/* Name is in a different directory. */
 	if (OCFS2_I(parent)->ip_blkno != parent_blkno)
 		return 0;
@@ -296,6 +287,18 @@ int ocfs2_dentry_attach_lock(struct dentry *dentry,
 
 out_attach:
 	spin_lock(&dentry_attach_lock);
+	if (unlikely(dentry->d_fsdata && !alias)) {
+		/* d_fsdata is set by a racing thread which is doing
+		 * the same thing as this thread is doing. Leave the racing
+		 * thread going ahead and we return here.
+		 */
+		spin_unlock(&dentry_attach_lock);
+		iput(dl->dl_inode);
+		ocfs2_lock_res_free(&dl->dl_lockres);
+		kfree(dl);
+		return 0;
+	}
+
 	dentry->d_fsdata = dl;
 	dl->dl_count++;
 	spin_unlock(&dentry_attach_lock);

@@ -15,9 +15,9 @@
 #include <linux/interrupt.h>
 #include <linux/kernel.h>
 #include <linux/module.h>
-#include <linux/of.h>
-#include <linux/of_platform.h>
+#include <linux/mod_devicetable.h>
 #include <linux/platform_device.h>
+#include <linux/property.h>
 #include <linux/regmap.h>
 
 #include <linux/iio/buffer.h>
@@ -82,7 +82,7 @@
 
 #define CPCAP_ADC_MAX_RETRIES		5	/* Calibration */
 
-/**
+/*
  * struct cpcap_adc_ato - timing settings for cpcap adc
  *
  * Unfortunately no cpcap documentation available, please document when
@@ -100,7 +100,7 @@ struct cpcap_adc_ato {
 };
 
 /**
- * struct cpcap-adc - cpcap adc device driver data
+ * struct cpcap_adc - cpcap adc device driver data
  * @reg: cpcap regmap
  * @dev: struct device
  * @vendor: cpcap vendor
@@ -121,7 +121,7 @@ struct cpcap_adc {
 	bool done;
 };
 
-/**
+/*
  * enum cpcap_adc_channel - cpcap adc channels
  */
 enum cpcap_adc_channel {
@@ -152,7 +152,7 @@ enum cpcap_adc_channel {
 	CPCAP_ADC_CHANNEL_NUM,
 };
 
-/**
+/*
  * enum cpcap_adc_timing - cpcap adc timing options
  *
  * CPCAP_ADC_TIMING_IMM seems to be immediate with no timings.
@@ -385,9 +385,8 @@ static irqreturn_t cpcap_adc_irq_thread(int irq, void *data)
 	struct cpcap_adc *ddata = iio_priv(indio_dev);
 	int error;
 
-	error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-				   CPCAP_BIT_ADTRIG_DIS,
-				   CPCAP_BIT_ADTRIG_DIS);
+	error = regmap_set_bits(ddata->reg, CPCAP_REG_ADCC2,
+				CPCAP_BIT_ADTRIG_DIS);
 	if (error)
 		return IRQ_NONE;
 
@@ -424,23 +423,19 @@ static void cpcap_adc_setup_calibrate(struct cpcap_adc *ddata,
 	if (error)
 		return;
 
-	error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-				   CPCAP_BIT_ATOX_PS_FACTOR |
-				   CPCAP_BIT_ADC_PS_FACTOR1 |
-				   CPCAP_BIT_ADC_PS_FACTOR0,
-				   0);
+	error = regmap_clear_bits(ddata->reg, CPCAP_REG_ADCC2,
+				  CPCAP_BIT_ATOX_PS_FACTOR |
+				  CPCAP_BIT_ADC_PS_FACTOR1 |
+				  CPCAP_BIT_ADC_PS_FACTOR0);
 	if (error)
 		return;
 
-	error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-				   CPCAP_BIT_ADTRIG_DIS,
-				   CPCAP_BIT_ADTRIG_DIS);
+	error = regmap_set_bits(ddata->reg, CPCAP_REG_ADCC2,
+				CPCAP_BIT_ADTRIG_DIS);
 	if (error)
 		return;
 
-	error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-				   CPCAP_BIT_ASC,
-				   CPCAP_BIT_ASC);
+	error = regmap_set_bits(ddata->reg, CPCAP_REG_ADCC2, CPCAP_BIT_ASC);
 	if (error)
 		return;
 
@@ -455,8 +450,8 @@ static void cpcap_adc_setup_calibrate(struct cpcap_adc *ddata,
 		dev_err(ddata->dev,
 			"Timeout waiting for calibration to complete\n");
 
-	error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC1,
-				   CPCAP_BIT_CAL_MODE, 0);
+	error = regmap_clear_bits(ddata->reg, CPCAP_REG_ADCC1,
+				  CPCAP_BIT_CAL_MODE);
 	if (error)
 		return;
 }
@@ -474,7 +469,7 @@ static int cpcap_adc_calibrate_one(struct cpcap_adc *ddata,
 	for (i = 0; i < CPCAP_ADC_MAX_RETRIES; i++) {
 		calibration_data[0]  = 0;
 		calibration_data[1]  = 0;
-		cal_data_diff = 0;
+
 		cpcap_adc_setup_calibrate(ddata, channel);
 		error = regmap_read(ddata->reg, calibration_register,
 				    &calibration_data[0]);
@@ -557,6 +552,7 @@ static void cpcap_adc_setup_bank(struct cpcap_adc *ddata,
 		break;
 	case CPCAP_ADC_BATTP_PI16 ... CPCAP_ADC_BATTI_PI17:
 		value1 |= CPCAP_BIT_RAND1;
+		break;
 	default:
 		break;
 	}
@@ -601,26 +597,23 @@ static void cpcap_adc_setup_bank(struct cpcap_adc *ddata,
 		return;
 
 	if (req->timing == CPCAP_ADC_TIMING_IMM) {
-		error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-					   CPCAP_BIT_ADTRIG_DIS,
-					   CPCAP_BIT_ADTRIG_DIS);
+		error = regmap_set_bits(ddata->reg, CPCAP_REG_ADCC2,
+					CPCAP_BIT_ADTRIG_DIS);
 		if (error)
 			return;
 
-		error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-					   CPCAP_BIT_ASC,
-					   CPCAP_BIT_ASC);
+		error = regmap_set_bits(ddata->reg, CPCAP_REG_ADCC2,
+					CPCAP_BIT_ASC);
 		if (error)
 			return;
 	} else {
-		error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-					   CPCAP_BIT_ADTRIG_ONESHOT,
-					   CPCAP_BIT_ADTRIG_ONESHOT);
+		error = regmap_set_bits(ddata->reg, CPCAP_REG_ADCC2,
+					CPCAP_BIT_ADTRIG_ONESHOT);
 		if (error)
 			return;
 
-		error = regmap_update_bits(ddata->reg, CPCAP_REG_ADCC2,
-					   CPCAP_BIT_ADTRIG_DIS, 0);
+		error = regmap_clear_bits(ddata->reg, CPCAP_REG_ADCC2,
+					  CPCAP_BIT_ADTRIG_DIS);
 		if (error)
 			return;
 	}
@@ -690,7 +683,7 @@ static void cpcap_adc_phase(struct cpcap_adc_request *req)
 		break;
 	case CPCAP_ADC_BATTI_PI17:
 		index = req->bank_index;
-		/* fallthrough */
+		fallthrough;
 	default:
 		req->result += conv_tbl[index].cal_offset;
 		req->result += conv_tbl[index].align_offset;
@@ -955,21 +948,9 @@ MODULE_DEVICE_TABLE(of, cpcap_adc_id_table);
 
 static int cpcap_adc_probe(struct platform_device *pdev)
 {
-	const struct of_device_id *match;
 	struct cpcap_adc *ddata;
 	struct iio_dev *indio_dev;
 	int error;
-
-	match = of_match_device(of_match_ptr(cpcap_adc_id_table),
-				&pdev->dev);
-	if (!match)
-		return -EINVAL;
-
-	if (!match->data) {
-		dev_err(&pdev->dev, "no configuration data found\n");
-
-		return -ENODEV;
-	}
 
 	indio_dev = devm_iio_device_alloc(&pdev->dev, sizeof(*ddata));
 	if (!indio_dev) {
@@ -978,15 +959,15 @@ static int cpcap_adc_probe(struct platform_device *pdev)
 		return -ENOMEM;
 	}
 	ddata = iio_priv(indio_dev);
-	ddata->ato = match->data;
+	ddata->ato = device_get_match_data(&pdev->dev);
+	if (!ddata->ato)
+		return -ENODEV;
 	ddata->dev = &pdev->dev;
 
 	mutex_init(&ddata->lock);
 	init_waitqueue_head(&ddata->wq_data_avail);
 
 	indio_dev->modes = INDIO_DIRECT_MODE | INDIO_BUFFER_SOFTWARE;
-	indio_dev->dev.parent = &pdev->dev;
-	indio_dev->dev.of_node = pdev->dev.of_node;
 	indio_dev->channels = cpcap_adc_channels;
 	indio_dev->num_channels = ARRAY_SIZE(cpcap_adc_channels);
 	indio_dev->name = dev_name(&pdev->dev);
@@ -1008,7 +989,7 @@ static int cpcap_adc_probe(struct platform_device *pdev)
 
 	error = devm_request_threaded_irq(&pdev->dev, ddata->irq, NULL,
 					  cpcap_adc_irq_thread,
-					  IRQF_TRIGGER_NONE,
+					  IRQF_TRIGGER_NONE | IRQF_ONESHOT,
 					  "cpcap-adc", indio_dev);
 	if (error) {
 		dev_err(&pdev->dev, "could not get irq: %i\n",
@@ -1029,7 +1010,7 @@ static int cpcap_adc_probe(struct platform_device *pdev)
 static struct platform_driver cpcap_adc_driver = {
 	.driver = {
 		.name = "cpcap_adc",
-		.of_match_table = of_match_ptr(cpcap_adc_id_table),
+		.of_match_table = cpcap_adc_id_table,
 	},
 	.probe = cpcap_adc_probe,
 };

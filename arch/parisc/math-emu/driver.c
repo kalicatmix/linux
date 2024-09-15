@@ -26,12 +26,6 @@
 
 #define FPUDEBUG 0
 
-/* Format of the floating-point exception registers. */
-struct exc_reg {
-	unsigned int exception : 6;
-	unsigned int ei : 26;
-};
-
 /* Macros for grabbing bits of the instruction format from the 'ei'
    field above. */
 /* Major opcode 0c and 0e */
@@ -104,7 +98,7 @@ handle_fpe(struct pt_regs *regs)
 	memcpy(regs->fr, frcopy, sizeof regs->fr);
 	if (signalcode != 0) {
 	    force_sig_fault(signalcode >> 24, signalcode & 0xffffff,
-			    (void __user *) regs->iaoq[0], current);
+			    (void __user *) regs->iaoq[0]);
 	    return -1;
 	}
 

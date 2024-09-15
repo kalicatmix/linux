@@ -431,7 +431,7 @@ static u32 cx24123_int_log2(u32 a, u32 b)
 	u32 div = a / b;
 	if (a % b >= b / 2)
 		++div;
-	if (div < (1 << 31)) {
+	if (div < (1UL << 31)) {
 		for (exp = 1; div > exp; nearest++)
 			exp += exp;
 	}
@@ -1096,7 +1096,7 @@ error:
 
 	return NULL;
 }
-EXPORT_SYMBOL(cx24123_attach);
+EXPORT_SYMBOL_GPL(cx24123_attach);
 
 static const struct dvb_frontend_ops cx24123_ops = {
 	.delsys = { SYS_DVBS },

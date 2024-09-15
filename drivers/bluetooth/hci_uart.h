@@ -37,7 +37,6 @@
 
 #define HCI_UART_RAW_DEVICE	0
 #define HCI_UART_RESET_ON_INIT	1
-#define HCI_UART_CREATE_AMP	2
 #define HCI_UART_INIT_PENDING	3
 #define HCI_UART_EXT_CONFIG	4
 #define HCI_UART_VND_DETECT	5
@@ -86,9 +85,10 @@ struct hci_uart {
 };
 
 /* HCI_UART proto flag bits */
-#define HCI_UART_PROTO_SET	0
-#define HCI_UART_REGISTERED	1
-#define HCI_UART_PROTO_READY	2
+#define HCI_UART_PROTO_SET		0
+#define HCI_UART_REGISTERED		1
+#define HCI_UART_PROTO_READY		2
+#define HCI_UART_NO_SUSPEND_NOTIFIER	3
 
 /* TX states  */
 #define HCI_UART_SENDING	1
@@ -96,13 +96,25 @@ struct hci_uart {
 
 int hci_uart_register_proto(const struct hci_uart_proto *p);
 int hci_uart_unregister_proto(const struct hci_uart_proto *p);
-int hci_uart_register_device(struct hci_uart *hu, const struct hci_uart_proto *p);
+
+int hci_uart_register_device_priv(struct hci_uart *hu,
+				  const struct hci_uart_proto *p,
+				  int sizeof_priv);
+
+static inline int hci_uart_register_device(struct hci_uart *hu,
+					   const struct hci_uart_proto *p)
+{
+	return hci_uart_register_device_priv(hu, p, 0);
+}
+
 void hci_uart_unregister_device(struct hci_uart *hu);
 
 int hci_uart_tx_wakeup(struct hci_uart *hu);
+int hci_uart_wait_until_sent(struct hci_uart *hu);
 int hci_uart_init_ready(struct hci_uart *hu);
 void hci_uart_init_work(struct work_struct *work);
 void hci_uart_set_baudrate(struct hci_uart *hu, unsigned int speed);
+bool hci_uart_has_flow_control(struct hci_uart *hu);
 void hci_uart_set_flow_control(struct hci_uart *hu, bool enable);
 void hci_uart_set_speeds(struct hci_uart *hu, unsigned int init_speed,
 			 unsigned int oper_speed);
@@ -140,6 +152,13 @@ struct h4_recv_pkt {
 	.loff = 1, \
 	.lsize = 1, \
 	.maxlen = HCI_MAX_EVENT_SIZE
+
+#define H4_RECV_ISO \
+	.type = HCI_ISODATA_PKT, \
+	.hlen = HCI_ISO_HDR_SIZE, \
+	.loff = 2, \
+	.lsize = 2, \
+	.maxlen = HCI_MAX_FRAME_SIZE \
 
 struct sk_buff *h4_recv_buf(struct hci_dev *hdev, struct sk_buff *skb,
 			    const unsigned char *buffer, int count,

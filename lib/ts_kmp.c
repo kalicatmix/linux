@@ -36,7 +36,7 @@ struct ts_kmp
 {
 	u8 *		pattern;
 	unsigned int	pattern_len;
-	unsigned int 	prefix_tbl[0];
+	unsigned int	prefix_tbl[];
 };
 
 static unsigned int kmp_find(struct ts_config *conf, struct ts_state *state)
@@ -147,6 +147,7 @@ static void __exit exit_kmp(void)
 	textsearch_unregister(&kmp_ops);
 }
 
+MODULE_DESCRIPTION("Knuth-Morris-Pratt text search implementation");
 MODULE_LICENSE("GPL");
 
 module_init(init_kmp);

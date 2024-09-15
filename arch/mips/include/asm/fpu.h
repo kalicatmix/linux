@@ -71,12 +71,12 @@ static inline int __enable_fpu(enum fpu_mode mode)
 		goto fr_common;
 
 	case FPU_64BIT:
-#if !(defined(CONFIG_CPU_MIPSR2) || defined(CONFIG_CPU_MIPSR6) \
-      || defined(CONFIG_64BIT))
+#if !(defined(CONFIG_CPU_MIPSR2) || defined(CONFIG_CPU_MIPSR5) || \
+      defined(CONFIG_CPU_MIPSR6) || defined(CONFIG_64BIT))
 		/* we only have a 32-bit FPU */
 		return SIGFPE;
 #endif
-		/* fall through */
+		/* fallthrough */
 	case FPU_32BIT:
 		if (cpu_has_fre) {
 			/* clear FRE */
@@ -129,6 +129,18 @@ static inline int __own_fpu(void)
 	if (ret)
 		return ret;
 
+	if (current->thread.fpu.fcr31 & FPU_CSR_NAN2008) {
+		if (!cpu_has_nan_2008) {
+			ret = SIGFPE;
+			goto failed;
+		}
+	} else {
+		if (!cpu_has_nan_legacy) {
+			ret = SIGFPE;
+			goto failed;
+		}
+	}
+
 	KSTK_STATUS(current) |= ST0_CU1;
 	if (mode == FPU_64BIT || mode == FPU_HYBRID)
 		KSTK_STATUS(current) |= ST0_FR;
@@ -137,6 +149,9 @@ static inline int __own_fpu(void)
 
 	set_thread_flag(TIF_USEDFPU);
 	return 0;
+failed:
+	__disable_fpu();
+	return ret;
 }
 
 static inline int own_fpu_inatomic(int restore)

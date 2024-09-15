@@ -279,9 +279,7 @@ static void em_sti_register_clockevent(struct em_sti_priv *p)
 static int em_sti_probe(struct platform_device *pdev)
 {
 	struct em_sti_priv *p;
-	struct resource *res;
-	int irq;
-	int ret;
+	int irq, ret;
 
 	p = devm_kzalloc(&pdev->dev, sizeof(*p), GFP_KERNEL);
 	if (p == NULL)
@@ -291,14 +289,11 @@ static int em_sti_probe(struct platform_device *pdev)
 	platform_set_drvdata(pdev, p);
 
 	irq = platform_get_irq(pdev, 0);
-	if (irq < 0) {
-		dev_err(&pdev->dev, "failed to get irq\n");
+	if (irq < 0)
 		return irq;
-	}
 
 	/* map memory, let base point to the STI instance */
-	res = platform_get_resource(pdev, IORESOURCE_MEM, 0);
-	p->base = devm_ioremap_resource(&pdev->dev, res);
+	p->base = devm_platform_ioremap_resource(pdev, 0);
 	if (IS_ERR(p->base))
 		return PTR_ERR(p->base);
 
@@ -338,11 +333,6 @@ static int em_sti_probe(struct platform_device *pdev)
 	return 0;
 }
 
-static int em_sti_remove(struct platform_device *pdev)
-{
-	return -EBUSY; /* cannot unregister clockevent and clocksource */
-}
-
 static const struct of_device_id em_sti_dt_ids[] = {
 	{ .compatible = "renesas,em-sti", },
 	{},
@@ -351,10 +341,10 @@ MODULE_DEVICE_TABLE(of, em_sti_dt_ids);
 
 static struct platform_driver em_sti_device_driver = {
 	.probe		= em_sti_probe,
-	.remove		= em_sti_remove,
 	.driver		= {
 		.name	= "em_sti",
 		.of_match_table = em_sti_dt_ids,
+		.suppress_bind_attrs = true,
 	}
 };
 
@@ -373,4 +363,3 @@ module_exit(em_sti_exit);
 
 MODULE_AUTHOR("Magnus Damm");
 MODULE_DESCRIPTION("Renesas Emma Mobile STI Timer Driver");
-MODULE_LICENSE("GPL v2");

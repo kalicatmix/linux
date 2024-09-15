@@ -1,9 +1,6 @@
+/* SPDX-License-Identifier: GPL-2.0-only */
 /*
  * Copyright (C) 2012 Freescale Semiconductor, Inc.
- *
- * This program is free software; you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
  */
 
 #ifndef __LINUX_IMX6Q_IOMUXC_GPR_H
@@ -454,8 +451,10 @@
 #define IMX6SX_GPR12_PCIE_RX_EQ_2			(0x2 << 0)
 
 /* For imx6ul iomux gpr register field define */
-#define IMX6UL_GPR1_ENET1_CLK_DIR		(0x1 << 17)
-#define IMX6UL_GPR1_ENET2_CLK_DIR		(0x1 << 18)
+#define IMX6UL_GPR1_ENET2_TX_CLK_DIR		BIT(18)
+#define IMX6UL_GPR1_ENET1_TX_CLK_DIR		BIT(17)
+#define IMX6UL_GPR1_ENET2_CLK_SEL		BIT(14)
+#define IMX6UL_GPR1_ENET1_CLK_SEL		BIT(13)
 #define IMX6UL_GPR1_ENET1_CLK_OUTPUT		(0x1 << 17)
 #define IMX6UL_GPR1_ENET2_CLK_OUTPUT		(0x1 << 18)
 #define IMX6UL_GPR1_ENET_CLK_DIR		(0x3 << 17)
